@@ -547,37 +547,7 @@
         let currentUser = null;
         let currentRoom = null;
 
-        // 로그인
-        async function login() {
-            const email = document.getElementById('loginEmail').value.trim();
 
-            if (!email) {
-                showMessage('이메일을 입력해주세요', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_BASE}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-
-                if (!response.ok) throw new Error('로그인 실패');
-
-                const data = await response.json();
-                currentUser = data.user;
-                localStorage.setItem('userEmail', email);
-
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainScreen').classList.add('active');
-                document.getElementById('userEmail').textContent = email;
-
-                loadRooms();
-            } catch (error) {
-                showMessage('오류: ' + error.message, 'error');
-            }
-        }
 
         // 로그아웃
         function logout() {
@@ -980,11 +950,49 @@
             const savedEmail = localStorage.getItem('userEmail');
             if (savedEmail) {
                 document.getElementById('loginEmail').value = savedEmail;
-                login();
+                setTimeout(() => login(), 100);
             } else {
                 document.getElementById('loginEmail').focus();
             }
         });
+
+        // 로그인 함수 개선
+        async function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+
+            if (!email) {
+                showMessage('이메일을 입력해주세요', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '로그인 실패');
+                }
+
+                const data = await response.json();
+                currentUser = data.user;
+                localStorage.setItem('userEmail', email);
+
+                // 페이지 전환
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainScreen').classList.add('active');
+                document.getElementById('userEmail').textContent = email;
+
+                // 방 목록 로드
+                await loadRooms();
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('오류: ' + error.message, 'error');
+            }
+        }
     </script>
 </body>
 </html>
