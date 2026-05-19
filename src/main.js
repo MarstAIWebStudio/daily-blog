@@ -1,10 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
-
-// Supabase 설정
+// Supabase 설정 (CDN에서 로드됨)
 const SUPABASE_URL = 'https://mzlhzvalhzrztnmvywuj.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16bGh6dmFsaHpyenRubXZ5d3VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzcwNTgsImV4cCI6MjA5NDc1MzA1OH0.dFydAdJ5eBmXpvCRaDpy44-iO2_YWBCq2d1wwv0cSik'
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 let currentUser = null
 let currentRoom = null
