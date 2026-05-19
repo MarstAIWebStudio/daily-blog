@@ -53,33 +53,66 @@ daily-blog/
 ├── .env                   # 환경 변수 (실제 설정)
 ├── supabase-setup.sql     # Supabase 테이블 생성 SQL
 ├── blog.html              # 프론트엔드 HTML
+├── Procfile               # Railway 배포 설정
+├── railway.json           # Railway 빌드 설정
+├── RAILWAY_DEPLOY.md      # Railway 배포 가이드
 └── README.md              # 이 파일
 ```
 
 ## 🔌 API 엔드포인트
 
+### 사용자 인증
+- `POST /api/auth/login` - 이메일 로그인/회원가입
+- `GET /api/auth/me/:email` - 사용자 정보 조회
+
+### 방(Room)
+- `GET /api/rooms` - 모든 방 목록
+- `POST /api/rooms` - 새 방 생성
+- `GET /api/rooms/:id` - 방 상세 정보
+- `POST /api/rooms/:id/join` - 방 가입
+- `POST /api/rooms/:id/leave` - 방 나가기
+
 ### 게시글
-- `GET /api/posts` - 모든 게시글 조회
+- `GET /api/rooms/:roomId/posts` - 방의 게시글 목록
 - `POST /api/posts` - 새 게시글 작성
 - `DELETE /api/posts/:id` - 게시글 삭제
 
 ### 댓글
 - `POST /api/posts/:id/comments` - 댓글 추가
-- `DELETE /api/posts/:id/comments/:commentId` - 댓글 삭제
+- `DELETE /api/comments/:id` - 댓글 삭제
 
 ### 헬스 체크
 - `GET /api/health` - 서버 상태 확인
 
 ## 📝 요청/응답 예제
 
+### 로그인
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+```
+
+### 방 생성
+```bash
+curl -X POST http://localhost:3000/api/rooms \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "우리 반 블로그",
+    "description": "함께 일상을 공유해요",
+    "creator_email": "user@example.com"
+  }'
+```
+
 ### 게시글 작성
 ```bash
 curl -X POST http://localhost:3000/api/posts \
   -H "Content-Type: application/json" \
   -d '{
+    "room_id": 1,
     "title": "오늘의 이야기",
     "content": "좋은 날씨네요!",
-    "image": null
+    "author_email": "user@example.com"
   }'
 ```
 
@@ -88,7 +121,7 @@ curl -X POST http://localhost:3000/api/posts \
 curl -X POST http://localhost:3000/api/posts/1/comments \
   -H "Content-Type: application/json" \
   -d '{
-    "author": "홍길동",
+    "author_email": "user@example.com",
     "text": "좋은 글이네요!"
   }'
 ```
@@ -106,6 +139,22 @@ npm install <package-name>
 ```
 
 ## 📦 배포
+
+### Railway 배포 (추천)
+
+자세한 가이드는 [RAILWAY_DEPLOY.md](./RAILWAY_DEPLOY.md) 참고
+
+1. [Railway](https://railway.app)에서 계정 생성
+2. GitHub 연결
+3. "New Project" → "Deploy from GitHub repo" 선택
+4. `daily-blog` 저장소 선택
+5. 환경 변수 설정:
+   - `SUPABASE_URL`
+   - `SUPABASE_KEY`
+   - `PORT=3000`
+   - `NODE_ENV=production`
+6. 배포 완료 후 URL 복사
+7. `blog.html`의 `API_BASE` 수정
 
 ### Heroku 배포
 ```bash
