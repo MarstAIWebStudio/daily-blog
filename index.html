@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일상 공유 블로그</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-email {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #0b7dda;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .btn-logout {
+            background: #666;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-logout:hover {
+            background: #555;
+        }
+
+        /* 로그인 화면 */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .login-container h2 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        input[type="email"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="email"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* 메인 화면 */
+        .main-content {
+            display: none;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        /* 탭 네비게이션 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #666;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #4CAF50;
+            border-bottom-color: #4CAF50;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 방 목록 */
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .room-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .room-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .room-name {
+            color: #333;
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .room-description {
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .room-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #999;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .room-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+
+        /* 방 상세 */
+        .room-detail {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .room-header h2 {
+            color: #333;
+        }
+
+        .room-members {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        /* 게시글 */
+        .posts-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .post {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .post:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .post-title {
+            color: #333;
+            font-size: 1.3em;
+            font-weight: 700;
+        }
+
+        .post-meta {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .post-content {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .post-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        /* 댓글 */
+        .comments-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .comments-title {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .comment {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .comment-content {
+            flex: 1;
+        }
+
+        .comment-author {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .comment-text {
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .comment-date {
+            color: #999;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .add-comment {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .add-comment input,
+        .add-comment textarea {
+            margin-bottom: 10px;
+        }
+
+        .add-comment button {
+            width: 100%;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state p {
+            font-size: 1.1em;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+        }
+
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2e7d32;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .rooms-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로그인 화면 -->
+    <div id="loginScreen" class="login-container">
+        <h2>📝 일상 공유 블로그</h2>
+        <p style="color: #666; margin-bottom: 30px;">이메일로 로그인하세요</p>
+        
+        <div class="form-group">
+            <input type="email" id="loginEmail" placeholder="이메일을 입력하세요" autofocus>
+        </div>
+        
+        <button class="btn-primary" onclick="login()" style="width: 100%;">로그인</button>
+    </div>
+
+    <!-- 메인 화면 -->
+    <div id="mainScreen" class="main-content">
+        <div class="container">
+            <header>
+                <h1>📝 일상 공유</h1>
+                <div class="user-info">
+                    <span class="user-email" id="userEmail"></span>
+                    <button class="btn-logout" onclick="logout()">로그아웃</button>
+                </div>
+            </header>
+
+            <div id="message"></div>
+
+            <!-- 탭 네비게이션 -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('rooms')">방 목록</button>
+                <button class="tab-btn" onclick="switchTab('create-room')">방 만들기</button>
+                <button class="tab-btn" onclick="switchTab('current-room')">현재 방</button>
+            </div>
+
+            <!-- 방 목록 탭 -->
+            <div id="rooms" class="tab-content active">
+                <div class="rooms-grid" id="roomsGrid">
+                    <div class="empty-state"><p>아직 방이 없습니다. 첫 번째 방을 만들어보세요!</p></div>
+                </div>
+            </div>
+
+            <!-- 방 만들기 탭 -->
+            <div id="create-room" class="tab-content">
+                <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                    <h2 style="margin-bottom: 20px; color: #333;">새 방 만들기</h2>
+                    
+                    <div class="form-group">
+                        <label>방 이름</label>
+                        <input type="text" id="roomName" placeholder="방 이름을 입력하세요">
+                    </div>
+
+                    <div class="form-group">
+                        <label>방 설명</label>
+                        <textarea id="roomDescription" placeholder="방에 대한 설명을 입력하세요"></textarea>
+                    </div>
+
+                    <button class="btn-primary" onclick="createRoom()" style="width: 100%;">방 만들기</button>
+                </div>
+            </div>
+
+            <!-- 현재 방 탭 -->
+            <div id="current-room" class="tab-content">
+                <div id="roomDetail"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // localStorage 기반 데이터 관리
+        const DB = {
+            getRooms() {
+                return JSON.parse(localStorage.getItem('rooms') || '[]');
+            },
+            setRooms(rooms) {
+                localStorage.setItem('rooms', JSON.stringify(rooms));
+            },
+            addRoom(room) {
+                const rooms = this.getRooms();
+                room.id = Date.now();
+                room.created_at = new Date().toISOString();
+                rooms.push(room);
+                this.setRooms(rooms);
+                return room;
+            },
+            getRoom(id) {
+                return this.getRooms().find(r => r.id === id);
+            },
+            deleteRoom(id) {
+                const rooms = this.getRooms().filter(r => r.id !== id);
+                this.setRooms(rooms);
+            },
+            addPost(roomId, post) {
+                const rooms = this.getRooms();
+                const room = rooms.find(r => r.id === roomId);
+                if (room) {
+                    if (!room.posts) room.posts = [];
+                    post.id = Date.now();
+                    post.created_at = new Date().toISOString();
+                    post.comments = [];
+                    room.posts.push(post);
+                    this.setRooms(rooms);
+                    return post;
+                }
+            },
+            deletePost(roomId, postId) {
+                const rooms = this.getRooms();
+                const room = rooms.find(r => r.id === roomId);
+                if (room) {
+                    room.posts = room.posts.filter(p => p.id !== postId);
+                    this.setRooms(rooms);
+                }
+            },
+            addComment(roomId, postId, comment) {
+                const rooms = this.getRooms();
+                const room = rooms.find(r => r.id === roomId);
+                if (room) {
+                    const post = room.posts.find(p => p.id === postId);
+                    if (post) {
+                        comment.id = Date.now();
+                        comment.created_at = new Date().toISOString();
+                        post.comments.push(comment);
+                        this.setRooms(rooms);
+                        return comment;
+                    }
+                }
+            },
+            deleteComment(roomId, postId, commentId) {
+                const rooms = this.getRooms();
+                const room = rooms.find(r => r.id === roomId);
+                if (room) {
+                    const post = room.posts.find(p => p.id === postId);
+                    if (post) {
+                        post.comments = post.comments.filter(c => c.id !== commentId);
+                        this.setRooms(rooms);
+                    }
+                }
+            }
+        };
+
+        let currentUser = null;
+        let currentRoom = null;
+
+        // 로그인
+        function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+
+            if (!email) {
+                showMessage('이메일을 입력해주세요', 'error');
+                return;
+            }
+
+            currentUser = { email };
+            localStorage.setItem('userEmail', email);
+
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainScreen').classList.add('active');
+            document.getElementById('userEmail').textContent = email;
+
+            loadRooms();
+        }
+
+        // 로그아웃
+        function logout() {
+            if (confirm('로그아웃하시겠습니까?')) {
+                currentUser = null;
+                currentRoom = null;
+                localStorage.removeItem('userEmail');
+                
+                document.getElementById('mainScreen').classList.remove('active');
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginEmail').focus();
+            }
+        }
+
+        // 탭 전환
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // 메시지 표시
+        function showMessage(text, type = 'success') {
+            const messageEl = document.getElementById('message');
+            messageEl.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => {
+                messageEl.innerHTML = '';
+            }, 3000);
+        }
+
+        // 방 목록 로드
+        function loadRooms() {
+            const rooms = DB.getRooms();
+            renderRooms(rooms);
+        }
+
+        // 방 목록 렌더링
+        function renderRooms(rooms) {
+            const grid = document.getElementById('roomsGrid');
+
+            if (rooms.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><p>아직 방이 없습니다. 첫 번째 방을 만들어보세요!</p></div>';
+                return;
+            }
+
+            grid.innerHTML = rooms.map(room => `
+                <div class="room-card">
+                    <div class="room-name">${escapeHtml(room.name)}</div>
+                    <div class="room-description">${escapeHtml(room.description || '설명 없음')}</div>
+                    <div class="room-meta">
+                        <span>생성자: ${room.creator_email}</span>
+                        <span>${room.posts ? room.posts.length : 0}개 게시글</span>
+                    </div>
+                    <div class="room-actions">
+                        <button class="btn-secondary" onclick="enterRoom(${room.id})">입장</button>
+                        <button class="btn-danger" onclick="deleteRoom(${room.id})">삭제</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 방 만들기
+        function createRoom() {
+            const name = document.getElementById('roomName').value.trim();
+            const description = document.getElementById('roomDescription').value.trim();
+
+            if (!name) {
+                showMessage('방 이름을 입력해주세요', 'error');
+                return;
+            }
+
+            const room = DB.addRoom({
+                name,
+                description,
+                creator_email: currentUser.email,
+                posts: []
+            });
+
+            showMessage('방이 생성되었습니다!', 'success');
+            document.getElementById('roomName').value = '';
+            document.getElementById('roomDescription').value = '';
+            
+            switchTab('rooms');
+            loadRooms();
+        }
+
+        // 방 삭제
+        function deleteRoom(roomId) {
+            if (!confirm('방을 삭제하시겠습니까?')) return;
+
+            DB.deleteRoom(roomId);
+            showMessage('방이 삭제되었습니다', 'success');
+            loadRooms();
+        }
+
+        // 방 입장
+        function enterRoom(roomId) {
+            currentRoom = DB.getRoom(roomId);
+            if (currentRoom) {
+                renderRoomDetail();
+                switchTab('current-room');
+            }
+        }
+
+        // 방 상세 렌더링
+        function renderRoomDetail() {
+            const detail = document.getElementById('roomDetail');
+            
+            detail.innerHTML = `
+                <div class="room-detail">
+                    <div class="room-header">
+                        <div>
+                            <h2>${escapeHtml(currentRoom.name)}</h2>
+                            <p style="color: #666; margin-top: 5px;">${escapeHtml(currentRoom.description || '')}</p>
+                        </div>
+                        <button class="btn-danger" onclick="exitRoom()">방 나가기</button>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #333; margin-bottom: 10px;">새 게시글 작성</h3>
+                        <div class="form-group">
+                            <input type="text" id="postTitle" placeholder="제목">
+                        </div>
+                        <div class="form-group">
+                            <textarea id="postContent" placeholder="내용"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <input type="file" id="postImage" accept="image/*">
+                        </div>
+                        <button class="btn-primary" onclick="createPost()" style="width: 100%;">게시글 작성</button>
+                    </div>
+
+                    <h3 style="color: #333; margin-bottom: 20px;">게시글</h3>
+                    <div class="posts-section" id="postsContainer">
+                        <div class="empty-state"><p>아직 게시글이 없습니다</p></div>
+                    </div>
+                </div>
+            `;
+
+            renderRoomPosts();
+        }
+
+        // 게시글 렌더링
+        function renderRoomPosts() {
+            const posts = currentRoom.posts || [];
+            const container = document.getElementById('postsContainer');
+
+            if (posts.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>아직 게시글이 없습니다</p></div>';
+                return;
+            }
+
+            container.innerHTML = posts.map(post => `
+                <div class="post">
+                    <div class="post-header">
+                        <div>
+                            <div class="post-title">${escapeHtml(post.title)}</div>
+                            <div class="post-meta">${post.author_email} • ${formatDate(post.created_at)}</div>
+                        </div>
+                        ${post.author_email === currentUser.email ? 
+                            `<button class="btn-danger" onclick="deletePost(${post.id})">삭제</button>` : ''}
+                    </div>
+
+                    ${post.image ? `<img src="${post.image}" alt="게시글 이미지" class="post-image">` : ''}
+
+                    <div class="post-content">${escapeHtml(post.content)}</div>
+
+                    <div class="comments-section">
+                        <div class="comments-title">댓글 (${post.comments ? post.comments.length : 0})</div>
+
+                        ${post.comments && post.comments.length > 0 ? 
+                            post.comments.map(comment => `
+                                <div class="comment">
+                                    <div class="comment-content">
+                                        <div class="comment-author">${escapeHtml(comment.author_email)}</div>
+                                        <div class="comment-text">${escapeHtml(comment.text)}</div>
+                                        <div class="comment-date">${formatDate(comment.created_at)}</div>
+                                    </div>
+                                    ${comment.author_email === currentUser.email ? 
+                                        `<button class="btn-danger" onclick="deleteComment(${post.id}, ${comment.id})">삭제</button>` : ''}
+                                </div>
+                            `).join('')
+                            : '<p style="color: #999; margin: 10px 0;">댓글이 없습니다</p>'
+                        }
+
+                        <div class="add-comment">
+                            <textarea id="comment-text-${post.id}" placeholder="댓글을 입력하세요..."></textarea>
+                            <button class="btn-primary" onclick="addComment(${post.id})">댓글 작성</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 게시글 작성
+        function createPost() {
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value.trim();
+            const imageInput = document.getElementById('postImage');
+
+            if (!title || !content) {
+                showMessage('제목과 내용을 입력해주세요', 'error');
+                return;
+            }
+
+            if (imageInput.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const post = {
+                        title,
+                        content,
+                        image: e.target.result,
+                        author_email: currentUser.email
+                    };
+
+                    DB.addPost(currentRoom.id, post);
+                    showMessage('게시글이 작성되었습니다!', 'success');
+                    document.getElementById('postTitle').value = '';
+                    document.getElementById('postContent').value = '';
+                    document.getElementById('postImage').value = '';
+                    renderRoomPosts();
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                const post = {
+                    title,
+                    content,
+                    image: null,
+                    author_email: currentUser.email
+                };
+
+                DB.addPost(currentRoom.id, post);
+                showMessage('게시글이 작성되었습니다!', 'success');
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                renderRoomPosts();
+            }
+        }
+
+        // 게시글 삭제
+        function deletePost(postId) {
+            if (!confirm('정말 삭제하시겠습니까?')) return;
+
+            DB.deletePost(currentRoom.id, postId);
+            showMessage('게시글이 삭제되었습니다', 'success');
+            renderRoomPosts();
+        }
+
+        // 댓글 추가
+        function addComment(postId) {
+            const text = document.getElementById(`comment-text-${postId}`).value.trim();
+
+            if (!text) {
+                showMessage('댓글을 입력해주세요', 'error');
+                return;
+            }
+
+            DB.addComment(currentRoom.id, postId, {
+                author_email: currentUser.email,
+                text
+            });
+
+            showMessage('댓글이 작성되었습니다!', 'success');
+            document.getElementById(`comment-text-${postId}`).value = '';
+            renderRoomPosts();
+        }
+
+        // 댓글 삭제
+        function deleteComment(postId, commentId) {
+            if (!confirm('댓글을 삭제하시겠습니까?')) return;
+
+            DB.deleteComment(currentRoom.id, postId, commentId);
+            showMessage('댓글이 삭제되었습니다', 'success');
+            renderRoomPosts();
+        }
+
+        // 방 나가기
+        function exitRoom() {
+            currentRoom = null;
+            switchTab('rooms');
+            loadRooms();
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // HTML 이스케이프
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 페이지 로드 시
+        window.addEventListener('load', () => {
+            const savedEmail = localStorage.getItem('userEmail');
+            if (savedEmail) {
+                document.getElementById('loginEmail').value = savedEmail;
+                setTimeout(() => login(), 100);
+            } else {
+                document.getElementById('loginEmail').focus();
+            }
+        });
+    </script>
+</body>
+</html>
