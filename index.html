@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>일상 공유 블로그</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -270,11 +271,6 @@
             color: #333;
         }
 
-        .room-members {
-            color: #666;
-            font-size: 0.95em;
-        }
-
         /* 게시글 */
         .posts-section {
             display: flex;
@@ -417,6 +413,12 @@
             border-left: 4px solid #2e7d32;
         }
 
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
         @media (max-width: 600px) {
             header {
                 flex-direction: column;
@@ -469,7 +471,7 @@
             <!-- 방 목록 탭 -->
             <div id="rooms" class="tab-content active">
                 <div class="rooms-grid" id="roomsGrid">
-                    <div class="empty-state"><p>아직 방이 없습니다. 첫 번째 방을 만들어보세요!</p></div>
+                    <div class="loading">로딩 중...</div>
                 </div>
             </div>
 
@@ -500,82 +502,17 @@
     </div>
 
     <script>
-        // localStorage 기반 데이터 관리
-        const DB = {
-            getRooms() {
-                return JSON.parse(localStorage.getItem('rooms') || '[]');
-            },
-            setRooms(rooms) {
-                localStorage.setItem('rooms', JSON.stringify(rooms));
-            },
-            addRoom(room) {
-                const rooms = this.getRooms();
-                room.id = Date.now();
-                room.created_at = new Date().toISOString();
-                rooms.push(room);
-                this.setRooms(rooms);
-                return room;
-            },
-            getRoom(id) {
-                return this.getRooms().find(r => r.id === id);
-            },
-            deleteRoom(id) {
-                const rooms = this.getRooms().filter(r => r.id !== id);
-                this.setRooms(rooms);
-            },
-            addPost(roomId, post) {
-                const rooms = this.getRooms();
-                const room = rooms.find(r => r.id === roomId);
-                if (room) {
-                    if (!room.posts) room.posts = [];
-                    post.id = Date.now();
-                    post.created_at = new Date().toISOString();
-                    post.comments = [];
-                    room.posts.push(post);
-                    this.setRooms(rooms);
-                    return post;
-                }
-            },
-            deletePost(roomId, postId) {
-                const rooms = this.getRooms();
-                const room = rooms.find(r => r.id === roomId);
-                if (room) {
-                    room.posts = room.posts.filter(p => p.id !== postId);
-                    this.setRooms(rooms);
-                }
-            },
-            addComment(roomId, postId, comment) {
-                const rooms = this.getRooms();
-                const room = rooms.find(r => r.id === roomId);
-                if (room) {
-                    const post = room.posts.find(p => p.id === postId);
-                    if (post) {
-                        comment.id = Date.now();
-                        comment.created_at = new Date().toISOString();
-                        post.comments.push(comment);
-                        this.setRooms(rooms);
-                        return comment;
-                    }
-                }
-            },
-            deleteComment(roomId, postId, commentId) {
-                const rooms = this.getRooms();
-                const room = rooms.find(r => r.id === roomId);
-                if (room) {
-                    const post = room.posts.find(p => p.id === postId);
-                    if (post) {
-                        post.comments = post.comments.filter(c => c.id !== commentId);
-                        this.setRooms(rooms);
-                    }
-                }
-            }
-        };
+        // Supabase 설정
+        const SUPABASE_URL = 'https://mzlhzvalhzrztnmvywuj.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16bGh6dmFsaHpyenRubXZ5d3VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzcwNTgsImV4cCI6MjA5NDc1MzA1OH0.dFydAdJ5eBmXpvCRaDpy44-iO2_YWBCq2d1wwv0cSik';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentUser = null;
         let currentRoom = null;
 
         // 로그인
-        function login() {
+        async function login() {
             const email = document.getElementById('loginEmail').value.trim();
 
             if (!email) {
@@ -583,14 +520,41 @@
                 return;
             }
 
-            currentUser = { email };
-            localStorage.setItem('userEmail', email);
+            try {
+                // 사용자 조회 또는 생성
+                let { data: user, error: selectError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
 
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainScreen').classList.add('active');
-            document.getElementById('userEmail').textContent = email;
+                if (selectError && selectError.code !== 'PGRST116') {
+                    throw selectError;
+                }
 
-            loadRooms();
+                if (!user) {
+                    const { data: newUser, error: insertError } = await supabase
+                        .from('users')
+                        .insert([{ email }])
+                        .select()
+                        .single();
+
+                    if (insertError) throw insertError;
+                    user = newUser;
+                }
+
+                currentUser = user;
+                localStorage.setItem('userEmail', email);
+
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainScreen').classList.add('active');
+                document.getElementById('userEmail').textContent = email;
+
+                loadRooms();
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('오류: ' + error.message, 'error');
+            }
         }
 
         // 로그아웃
@@ -626,9 +590,20 @@
         }
 
         // 방 목록 로드
-        function loadRooms() {
-            const rooms = DB.getRooms();
-            renderRooms(rooms);
+        async function loadRooms() {
+            try {
+                const { data: rooms, error } = await supabase
+                    .from('rooms')
+                    .select('*, posts(count)')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                renderRooms(rooms || []);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('roomsGrid').innerHTML = 
+                    `<div class="error">${error.message}</div>`;
+            }
         }
 
         // 방 목록 렌더링
@@ -646,18 +621,17 @@
                     <div class="room-description">${escapeHtml(room.description || '설명 없음')}</div>
                     <div class="room-meta">
                         <span>생성자: ${room.creator_email}</span>
-                        <span>${room.posts ? room.posts.length : 0}개 게시글</span>
+                        <span>${room.posts ? room.posts[0].count : 0}개 게시글</span>
                     </div>
                     <div class="room-actions">
                         <button class="btn-secondary" onclick="enterRoom(${room.id})">입장</button>
-                        <button class="btn-danger" onclick="deleteRoom(${room.id})">삭제</button>
                     </div>
                 </div>
             `).join('');
         }
 
         // 방 만들기
-        function createRoom() {
+        async function createRoom() {
             const name = document.getElementById('roomName').value.trim();
             const description = document.getElementById('roomDescription').value.trim();
 
@@ -666,36 +640,46 @@
                 return;
             }
 
-            const room = DB.addRoom({
-                name,
-                description,
-                creator_email: currentUser.email,
-                posts: []
-            });
+            try {
+                const { error } = await supabase
+                    .from('rooms')
+                    .insert([{
+                        name,
+                        description: description || '',
+                        creator_email: currentUser.email
+                    }]);
 
-            showMessage('방이 생성되었습니다!', 'success');
-            document.getElementById('roomName').value = '';
-            document.getElementById('roomDescription').value = '';
-            
-            switchTab('rooms');
-            loadRooms();
-        }
+                if (error) throw error;
 
-        // 방 삭제
-        function deleteRoom(roomId) {
-            if (!confirm('방을 삭제하시겠습니까?')) return;
-
-            DB.deleteRoom(roomId);
-            showMessage('방이 삭제되었습니다', 'success');
-            loadRooms();
+                showMessage('방이 생성되었습니다!', 'success');
+                document.getElementById('roomName').value = '';
+                document.getElementById('roomDescription').value = '';
+                
+                switchTab('rooms');
+                loadRooms();
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('오류: ' + error.message, 'error');
+            }
         }
 
         // 방 입장
-        function enterRoom(roomId) {
-            currentRoom = DB.getRoom(roomId);
-            if (currentRoom) {
+        async function enterRoom(roomId) {
+            try {
+                const { data: room, error } = await supabase
+                    .from('rooms')
+                    .select('*, posts(*, comments(*))')
+                    .eq('id', roomId)
+                    .single();
+
+                if (error) throw error;
+
+                currentRoom = room;
                 renderRoomDetail();
                 switchTab('current-room');
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('오류: ' + error.message, 'error');
             }
         }
 
@@ -774,7 +758,7 @@
                                         <div class="comment-date">${formatDate(comment.created_at)}</div>
                                     </div>
                                     ${comment.author_email === currentUser.email ? 
-                                        `<button class="btn-danger" onclick="deleteComment(${post.id}, ${comment.id})">삭제</button>` : ''}
+                                        `<button class="btn-danger" onclick="deleteComment(${comment.id})">삭제</button>` : ''}
                                 </div>
                             `).join('')
                             : '<p style="color: #999; margin: 10px 0;">댓글이 없습니다</p>'
@@ -790,7 +774,7 @@
         }
 
         // 게시글 작성
-        function createPost() {
+        async function createPost() {
             const title = document.getElementById('postTitle').value.trim();
             const content = document.getElementById('postContent').value.trim();
             const imageInput = document.getElementById('postImage');
@@ -800,51 +784,58 @@
                 return;
             }
 
-            if (imageInput.files.length > 0) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const post = {
+            try {
+                let imageData = null;
+                if (imageInput.files.length > 0) {
+                    imageData = await fileToBase64(imageInput.files[0]);
+                }
+
+                const { error } = await supabase
+                    .from('posts')
+                    .insert([{
+                        room_id: currentRoom.id,
                         title,
                         content,
-                        image: e.target.result,
+                        image: imageData,
                         author_email: currentUser.email
-                    };
+                    }]);
 
-                    DB.addPost(currentRoom.id, post);
-                    showMessage('게시글이 작성되었습니다!', 'success');
-                    document.getElementById('postTitle').value = '';
-                    document.getElementById('postContent').value = '';
-                    document.getElementById('postImage').value = '';
-                    renderRoomPosts();
-                };
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                const post = {
-                    title,
-                    content,
-                    image: null,
-                    author_email: currentUser.email
-                };
+                if (error) throw error;
 
-                DB.addPost(currentRoom.id, post);
                 showMessage('게시글이 작성되었습니다!', 'success');
                 document.getElementById('postTitle').value = '';
                 document.getElementById('postContent').value = '';
-                renderRoomPosts();
+                document.getElementById('postImage').value = '';
+                
+                await enterRoom(currentRoom.id);
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('오류: ' + error.message, 'error');
             }
         }
 
         // 게시글 삭제
-        function deletePost(postId) {
+        async function deletePost(postId) {
             if (!confirm('정말 삭제하시겠습니까?')) return;
 
-            DB.deletePost(currentRoom.id, postId);
-            showMessage('게시글이 삭제되었습니다', 'success');
-            renderRoomPosts();
+            try {
+                const { error } = await supabase
+                    .from('posts')
+                    .delete()
+                    .eq('id', postId);
+
+                if (error) throw error;
+
+                showMessage('게시글이 삭제되었습니다', 'success');
+                await enterRoom(currentRoom.id);
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('오류: ' + error.message, 'error');
+            }
         }
 
         // 댓글 추가
-        function addComment(postId) {
+        async function addComment(postId) {
             const text = document.getElementById(`comment-text-${postId}`).value.trim();
 
             if (!text) {
@@ -852,23 +843,44 @@
                 return;
             }
 
-            DB.addComment(currentRoom.id, postId, {
-                author_email: currentUser.email,
-                text
-            });
+            try {
+                const { error } = await supabase
+                    .from('comments')
+                    .insert([{
+                        post_id: postId,
+                        author_email: currentUser.email,
+                        text
+                    }]);
 
-            showMessage('댓글이 작성되었습니다!', 'success');
-            document.getElementById(`comment-text-${postId}`).value = '';
-            renderRoomPosts();
+                if (error) throw error;
+
+                showMessage('댓글이 작성되었습니다!', 'success');
+                document.getElementById(`comment-text-${postId}`).value = '';
+                await enterRoom(currentRoom.id);
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('오류: ' + error.message, 'error');
+            }
         }
 
         // 댓글 삭제
-        function deleteComment(postId, commentId) {
+        async function deleteComment(commentId) {
             if (!confirm('댓글을 삭제하시겠습니까?')) return;
 
-            DB.deleteComment(currentRoom.id, postId, commentId);
-            showMessage('댓글이 삭제되었습니다', 'success');
-            renderRoomPosts();
+            try {
+                const { error } = await supabase
+                    .from('comments')
+                    .delete()
+                    .eq('id', commentId);
+
+                if (error) throw error;
+
+                showMessage('댓글이 삭제되었습니다', 'success');
+                await enterRoom(currentRoom.id);
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('오류: ' + error.message, 'error');
+            }
         }
 
         // 방 나가기
@@ -876,6 +888,16 @@
             currentRoom = null;
             switchTab('rooms');
             loadRooms();
+        }
+
+        // 파일을 Base64로 변환
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
         }
 
         // 날짜 포맷팅
