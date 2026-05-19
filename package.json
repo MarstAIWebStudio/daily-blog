@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "keywords": ["blog", "express", "supabase", "daily"],
   "author": "MarstAIWebStudio",
@@ -17,6 +19,7 @@
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "vite": "^5.0.0"
   }
 }
