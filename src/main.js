@@ -1,439 +1,455 @@
-// Supabase 설정 (CDN에서 로드됨)
-const SUPABASE_URL = 'https://mzlhzvalhzrztnmvywuj.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16bGh6dmFsaHpyenRubXZ5d3VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNzcwNTgsImV4cCI6MjA5NDc1MzA1OH0.dFydAdJ5eBmXpvCRaDpy44-iO2_YWBCq2d1wwv0cSik'
+// IndexedDB 설정
+const DB_NAME = 'DailyBlogDB'
+const DB_VERSION = 1
+let db = null
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+// IndexedDB 초기화
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION)
+        
+        request.onerror = () => reject(request.error)
+        request.onsuccess = () => {
+            db = request.result
+            resolve(db)
+        }
+        
+        request.onupgradeneeded = (event) => {
+            const database = event.target.result
+            
+            // Users 테이블
+            if (!database.objectStoreNames.contains('users')) {
+                database.createObjectStore('users', { keyPath: 'email' })
+            }
+            
+            // Rooms 테이블
+            if (!database.objectStoreNames.contains('rooms')) {
+                const roomStore = database.createObjectStore('rooms', { keyPath: 'id' })
+                roomStore.createIndex('createdAt', 'createdAt', { unique: false })
+            }
+            
+            // Posts 테이블
+            if (!database.objectStoreNames.contains('posts')) {
+                const postStore = database.createObjectStore('posts', { keyPath: 'id' })
+                postStore.createIndex('roomId', 'roomId', { unique: false })
+                postStore.createIndex('createdAt', 'createdAt', { unique: false })
+            }
+            
+            // Comments 테이블
+            if (!database.objectStoreNames.contains('comments')) {
+                const commentStore = database.createObjectStore('comments', { keyPath: 'id' })
+                commentStore.createIndex('postId', 'postId', { unique: false })
+                commentStore.createIndex('createdAt', 'createdAt', { unique: false })
+            }
+            
+            // RoomMembers 테이블
+            if (!database.objectStoreNames.contains('roomMembers')) {
+                const memberStore = database.createObjectStore('roomMembers', { keyPath: 'id' })
+                memberStore.createIndex('roomId', 'roomId', { unique: false })
+                memberStore.createIndex('email', 'email', { unique: false })
+            }
+        }
+    })
+}
 
+// 전역 변수
 let currentUser = null
 let currentRoom = null
 
 // 로그인
 async function login() {
     const email = document.getElementById('loginEmail').value.trim()
-
     if (!email) {
-        showMessage('이메일을 입력해주세요', 'error')
+        showMessage('이메일을 입력하세요', 'error')
         return
     }
-
+    
     try {
+        const transaction = db.transaction(['users'], 'readwrite')
+        const store = transaction.objectStore('users')
+        
         // 사용자 조회 또는 생성
-        let { data: user, error: selectError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single()
-
-        if (selectError && selectError.code !== 'PGRST116') {
-            throw selectError
+        const getRequest = store.get(email)
+        
+        getRequest.onsuccess = () => {
+            let user = getRequest.result
+            if (!user) {
+                user = {
+                    email,
+                    createdAt: new Date().toISOString()
+                }
+                store.add(user)
+            }
+            
+            currentUser = user
+            showMainScreen()
+            loadRooms()
         }
-
-        if (!user) {
-            const { data: newUser, error: insertError } = await supabase
-                .from('users')
-                .insert([{ email }])
-                .select()
-                .single()
-
-            if (insertError) throw insertError
-            user = newUser
-        }
-
-        currentUser = user
-        localStorage.setItem('userEmail', email)
-
-        document.getElementById('loginScreen').style.display = 'none'
-        document.getElementById('mainScreen').classList.add('active')
-        document.getElementById('userEmail').textContent = email
-
-        loadRooms()
     } catch (error) {
-        console.error('Error:', error)
-        showMessage('오류: ' + error.message, 'error')
+        showMessage('로그인 실패: ' + error.message, 'error')
     }
 }
 
 // 로그아웃
 function logout() {
-    if (confirm('로그아웃하시겠습니까?')) {
-        currentUser = null
-        currentRoom = null
-        localStorage.removeItem('userEmail')
-        
-        document.getElementById('mainScreen').classList.remove('active')
-        document.getElementById('loginScreen').style.display = 'block'
-        document.getElementById('loginEmail').value = ''
-        document.getElementById('loginEmail').focus()
-    }
+    currentUser = null
+    currentRoom = null
+    document.getElementById('loginScreen').style.display = 'block'
+    document.getElementById('mainScreen').style.display = 'none'
+    document.getElementById('loginEmail').value = ''
+}
+
+// 메인 화면 표시
+function showMainScreen() {
+    document.getElementById('loginScreen').style.display = 'none'
+    document.getElementById('mainScreen').style.display = 'block'
+    document.getElementById('userEmail').textContent = currentUser.email
+}
+
+// 메시지 표시
+function showMessage(text, type = 'info') {
+    const messageDiv = document.getElementById('message')
+    messageDiv.textContent = text
+    messageDiv.className = 'message ' + type
+    setTimeout(() => {
+        messageDiv.textContent = ''
+        messageDiv.className = 'message'
+    }, 3000)
 }
 
 // 탭 전환
 function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'))
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'))
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'))
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'))
     
     document.getElementById(tabName).classList.add('active')
     event.target.classList.add('active')
-}
-
-// 메시지 표시
-function showMessage(text, type = 'success') {
-    const messageEl = document.getElementById('message')
-    messageEl.innerHTML = `<div class="${type}">${text}</div>`
-    setTimeout(() => {
-        messageEl.innerHTML = ''
-    }, 3000)
+    
+    if (tabName === 'current-room' && currentRoom) {
+        loadRoomDetail()
+    }
 }
 
 // 방 목록 로드
 async function loadRooms() {
     try {
-        const { data: rooms, error } = await supabase
-            .from('rooms')
-            .select('*, posts(count)')
-            .order('created_at', { ascending: false })
-
-        if (error) throw error
-        renderRooms(rooms || [])
+        const transaction = db.transaction(['rooms'], 'readonly')
+        const store = transaction.objectStore('rooms')
+        const request = store.getAll()
+        
+        request.onsuccess = () => {
+            const rooms = request.result
+            const grid = document.getElementById('roomsGrid')
+            
+            if (rooms.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">만들어진 방이 없습니다</p>'
+                return
+            }
+            
+            grid.innerHTML = rooms.map(room => `
+                <div class="room-card">
+                    <h3>${room.name}</h3>
+                    <p>${room.description || '설명 없음'}</p>
+                    <small>생성: ${new Date(room.createdAt).toLocaleDateString('ko-KR')}</small>
+                    <button class="btn-primary" onclick="joinRoom('${room.id}')" style="width: 100%; margin-top: 10px;">입장</button>
+                </div>
+            `).join('')
+        }
     } catch (error) {
-        console.error('Error:', error)
-        document.getElementById('roomsGrid').innerHTML = 
-            `<div class="error">${error.message}</div>`
+        showMessage('방 목록 로드 실패: ' + error.message, 'error')
     }
-}
-
-// 방 목록 렌더링
-function renderRooms(rooms) {
-    const grid = document.getElementById('roomsGrid')
-
-    if (rooms.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><p>아직 방이 없습니다. 첫 번째 방을 만들어보세요!</p></div>'
-        return
-    }
-
-    grid.innerHTML = rooms.map(room => `
-        <div class="room-card">
-            <div class="room-name">${escapeHtml(room.name)}</div>
-            <div class="room-description">${escapeHtml(room.description || '설명 없음')}</div>
-            <div class="room-meta">
-                <span>생성자: ${room.creator_email}</span>
-                <span>${room.posts ? room.posts[0].count : 0}개 게시글</span>
-            </div>
-            <div class="room-actions">
-                <button class="btn-secondary" onclick="enterRoom(${room.id})">입장</button>
-            </div>
-        </div>
-    `).join('')
 }
 
 // 방 만들기
 async function createRoom() {
     const name = document.getElementById('roomName').value.trim()
     const description = document.getElementById('roomDescription').value.trim()
-
+    
     if (!name) {
-        showMessage('방 이름을 입력해주세요', 'error')
+        showMessage('방 이름을 입력하세요', 'error')
         return
     }
-
+    
     try {
-        const { error } = await supabase
-            .from('rooms')
-            .insert([{
-                name,
-                description: description || '',
-                creator_email: currentUser.email
-            }])
-
-        if (error) throw error
-
-        showMessage('방이 생성되었습니다!', 'success')
+        const room = {
+            id: 'room_' + Date.now(),
+            name,
+            description,
+            createdBy: currentUser.email,
+            createdAt: new Date().toISOString()
+        }
+        
+        const transaction = db.transaction(['rooms', 'roomMembers'], 'readwrite')
+        const roomStore = transaction.objectStore('rooms')
+        const memberStore = transaction.objectStore('roomMembers')
+        
+        roomStore.add(room)
+        
+        // 방 생성자를 멤버로 추가
+        memberStore.add({
+            id: 'member_' + Date.now(),
+            roomId: room.id,
+            email: currentUser.email,
+            joinedAt: new Date().toISOString()
+        })
+        
         document.getElementById('roomName').value = ''
         document.getElementById('roomDescription').value = ''
+        showMessage('방이 생성되었습니다!', 'success')
         
-        switchTab('rooms')
-        loadRooms()
+        await loadRooms()
     } catch (error) {
-        console.error('Error:', error)
-        showMessage('오류: ' + error.message, 'error')
+        showMessage('방 생성 실패: ' + error.message, 'error')
     }
 }
 
 // 방 입장
-async function enterRoom(roomId) {
+async function joinRoom(roomId) {
     try {
-        const { data: room, error } = await supabase
-            .from('rooms')
-            .select('*, posts(*, comments(*))')
-            .eq('id', roomId)
-            .single()
-
-        if (error) throw error
-
-        currentRoom = room
-        renderRoomDetail()
-        switchTab('current-room')
-    } catch (error) {
-        console.error('Error:', error)
-        showMessage('오류: ' + error.message, 'error')
-    }
-}
-
-// 방 상세 렌더링
-function renderRoomDetail() {
-    const detail = document.getElementById('roomDetail')
-    
-    detail.innerHTML = `
-        <div class="room-detail">
-            <div class="room-header">
-                <div>
-                    <h2>${escapeHtml(currentRoom.name)}</h2>
-                    <p style="color: #666; margin-top: 5px;">${escapeHtml(currentRoom.description || '')}</p>
-                </div>
-                <button class="btn-danger" onclick="exitRoom()">방 나가기</button>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <h3 style="color: #333; margin-bottom: 10px;">새 게시글 작성</h3>
-                <div class="form-group">
-                    <input type="text" id="postTitle" placeholder="제목">
-                </div>
-                <div class="form-group">
-                    <textarea id="postContent" placeholder="내용"></textarea>
-                </div>
-                <div class="form-group">
-                    <input type="file" id="postImage" accept="image/*">
-                </div>
-                <button class="btn-primary" onclick="createPost()" style="width: 100%;">게시글 작성</button>
-            </div>
-
-            <h3 style="color: #333; margin-bottom: 20px;">게시글</h3>
-            <div class="posts-section" id="postsContainer">
-                <div class="empty-state"><p>아직 게시글이 없습니다</p></div>
-            </div>
-        </div>
-    `
-
-    renderRoomPosts()
-}
-
-// 게시글 렌더링
-function renderRoomPosts() {
-    const posts = currentRoom.posts || []
-    const container = document.getElementById('postsContainer')
-
-    if (posts.length === 0) {
-        container.innerHTML = '<div class="empty-state"><p>아직 게시글이 없습니다</p></div>'
-        return
-    }
-
-    container.innerHTML = posts.map(post => `
-        <div class="post">
-            <div class="post-header">
-                <div>
-                    <div class="post-title">${escapeHtml(post.title)}</div>
-                    <div class="post-meta">${post.author_email} • ${formatDate(post.created_at)}</div>
-                </div>
-                ${post.author_email === currentUser.email ? 
-                    `<button class="btn-danger" onclick="deletePost(${post.id})">삭제</button>` : ''}
-            </div>
-
-            ${post.image ? `<img src="${post.image}" alt="게시글 이미지" class="post-image">` : ''}
-
-            <div class="post-content">${escapeHtml(post.content)}</div>
-
-            <div class="comments-section">
-                <div class="comments-title">댓글 (${post.comments ? post.comments.length : 0})</div>
-
-                ${post.comments && post.comments.length > 0 ? 
-                    post.comments.map(comment => `
-                        <div class="comment">
-                            <div class="comment-content">
-                                <div class="comment-author">${escapeHtml(comment.author_email)}</div>
-                                <div class="comment-text">${escapeHtml(comment.text)}</div>
-                                <div class="comment-date">${formatDate(comment.created_at)}</div>
-                            </div>
-                            ${comment.author_email === currentUser.email ? 
-                                `<button class="btn-danger" onclick="deleteComment(${comment.id})">삭제</button>` : ''}
-                        </div>
-                    `).join('')
-                    : '<p style="color: #999; margin: 10px 0;">댓글이 없습니다</p>'
+        const transaction = db.transaction(['rooms', 'roomMembers'], 'readwrite')
+        const roomStore = transaction.objectStore('rooms')
+        const memberStore = transaction.objectStore('roomMembers')
+        
+        // 방 정보 조회
+        const roomRequest = roomStore.get(roomId)
+        roomRequest.onsuccess = () => {
+            currentRoom = roomRequest.result
+            
+            // 멤버 추가
+            const memberIndex = memberStore.index('email')
+            const memberQuery = memberIndex.getAll(currentUser.email)
+            
+            memberQuery.onsuccess = () => {
+                const existingMembers = memberQuery.result.filter(m => m.roomId === roomId)
+                if (existingMembers.length === 0) {
+                    memberStore.add({
+                        id: 'member_' + Date.now(),
+                        roomId,
+                        email: currentUser.email,
+                        joinedAt: new Date().toISOString()
+                    })
                 }
+                
+                switchTab('current-room')
+                loadRoomDetail()
+            }
+        }
+    } catch (error) {
+        showMessage('방 입장 실패: ' + error.message, 'error')
+    }
+}
 
-                <div class="add-comment">
-                    <textarea id="comment-text-${post.id}" placeholder="댓글을 입력하세요..."></textarea>
-                    <button class="btn-primary" onclick="addComment(${post.id})">댓글 작성</button>
+// 방 상세 정보 로드
+async function loadRoomDetail() {
+    if (!currentRoom) return
+    
+    try {
+        const transaction = db.transaction(['posts', 'comments'], 'readonly')
+        const postStore = transaction.objectStore('posts')
+        const postIndex = postStore.index('roomId')
+        const postsRequest = postIndex.getAll(currentRoom.id)
+        
+        postsRequest.onsuccess = () => {
+            const posts = postsRequest.result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            
+            const detail = document.getElementById('roomDetail')
+            detail.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                    <h2>${currentRoom.name}</h2>
+                    <p>${currentRoom.description || '설명 없음'}</p>
+                    
+                    <div style="margin-top: 30px; margin-bottom: 30px;">
+                        <h3>새 게시글 작성</h3>
+                        <div class="form-group">
+                            <input type="text" id="postTitle" placeholder="제목">
+                        </div>
+                        <div class="form-group">
+                            <textarea id="postContent" placeholder="내용을 작성하세요"></textarea>
+                        </div>
+                        <button class="btn-primary" onclick="createPost()" style="width: 100%;">게시글 작성</button>
+                    </div>
+                    
+                    <h3>게시글 (${posts.length})</h3>
+                    <div id="postsList">
+                        ${posts.length === 0 ? '<p style="color: #999;">게시글이 없습니다</p>' : posts.map(post => `
+                            <div style="background: #f9f9f9; padding: 20px; margin-bottom: 15px; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div>
+                                        <h4 style="margin: 0 0 5px 0;">${post.title}</h4>
+                                        <small style="color: #999;">${post.author} • ${new Date(post.createdAt).toLocaleDateString('ko-KR')}</small>
+                                    </div>
+                                    ${post.author === currentUser.email ? `<button class="btn-secondary" onclick="deletePost('${post.id}')" style="padding: 5px 10px;">삭제</button>` : ''}
+                                </div>
+                                <p style="margin: 10px 0; white-space: pre-wrap;">${post.content}</p>
+                                
+                                <div style="background: white; padding: 15px; border-radius: 6px; margin-top: 10px;">
+                                    <h5 style="margin-top: 0;">댓글</h5>
+                                    <div id="comments-${post.id}"></div>
+                                    
+                                    <div style="margin-top: 10px;">
+                                        <input type="text" id="comment-input-${post.id}" placeholder="댓글을 입력하세요" style="width: calc(100% - 60px); padding: 8px;">
+                                        <button class="btn-primary" onclick="addComment('${post.id}')" style="width: 50px; margin-left: 5px;">등록</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
-            </div>
-        </div>
-    `).join('')
+            `
+            
+            // 댓글 로드
+            posts.forEach(post => loadComments(post.id))
+        }
+    } catch (error) {
+        showMessage('방 정보 로드 실패: ' + error.message, 'error')
+    }
 }
 
 // 게시글 작성
 async function createPost() {
     const title = document.getElementById('postTitle').value.trim()
     const content = document.getElementById('postContent').value.trim()
-    const imageInput = document.getElementById('postImage')
-
+    
     if (!title || !content) {
-        showMessage('제목과 내용을 입력해주세요', 'error')
+        showMessage('제목과 내용을 입력하세요', 'error')
         return
     }
-
+    
     try {
-        let imageData = null
-        if (imageInput.files.length > 0) {
-            imageData = await fileToBase64(imageInput.files[0])
+        const post = {
+            id: 'post_' + Date.now(),
+            roomId: currentRoom.id,
+            title,
+            content,
+            author: currentUser.email,
+            createdAt: new Date().toISOString()
         }
-
-        const { error } = await supabase
-            .from('posts')
-            .insert([{
-                room_id: currentRoom.id,
-                title,
-                content,
-                image: imageData,
-                author_email: currentUser.email
-            }])
-
-        if (error) throw error
-
-        showMessage('게시글이 작성되었습니다!', 'success')
+        
+        const transaction = db.transaction(['posts'], 'readwrite')
+        const store = transaction.objectStore('posts')
+        store.add(post)
+        
         document.getElementById('postTitle').value = ''
         document.getElementById('postContent').value = ''
-        document.getElementById('postImage').value = ''
+        showMessage('게시글이 작성되었습니다!', 'success')
         
-        await enterRoom(currentRoom.id)
+        loadRoomDetail()
     } catch (error) {
-        console.error('Error:', error)
-        showMessage('오류: ' + error.message, 'error')
+        showMessage('게시글 작성 실패: ' + error.message, 'error')
     }
 }
 
 // 게시글 삭제
 async function deletePost(postId) {
     if (!confirm('정말 삭제하시겠습니까?')) return
-
+    
     try {
-        const { error } = await supabase
-            .from('posts')
-            .delete()
-            .eq('id', postId)
-
-        if (error) throw error
-
+        const transaction = db.transaction(['posts', 'comments'], 'readwrite')
+        const postStore = transaction.objectStore('posts')
+        const commentStore = transaction.objectStore('comments')
+        
+        postStore.delete(postId)
+        
+        // 해당 게시글의 댓글도 삭제
+        const commentIndex = commentStore.index('postId')
+        const commentsRequest = commentIndex.getAll(postId)
+        
+        commentsRequest.onsuccess = () => {
+            commentsRequest.result.forEach(comment => {
+                commentStore.delete(comment.id)
+            })
+        }
+        
         showMessage('게시글이 삭제되었습니다', 'success')
-        await enterRoom(currentRoom.id)
+        loadRoomDetail()
     } catch (error) {
-        console.error('Error:', error)
-        showMessage('오류: ' + error.message, 'error')
+        showMessage('게시글 삭제 실패: ' + error.message, 'error')
+    }
+}
+
+// 댓글 로드
+async function loadComments(postId) {
+    try {
+        const transaction = db.transaction(['comments'], 'readonly')
+        const store = transaction.objectStore('comments')
+        const index = store.index('postId')
+        const request = index.getAll(postId)
+        
+        request.onsuccess = () => {
+            const comments = request.result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+            const container = document.getElementById('comments-' + postId)
+            
+            if (container) {
+                container.innerHTML = comments.map(comment => `
+                    <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <small style="color: #666;"><strong>${comment.author}</strong> • ${new Date(comment.createdAt).toLocaleString('ko-KR')}</small>
+                            ${comment.author === currentUser.email ? `<button class="btn-secondary" onclick="deleteComment('${comment.id}')" style="padding: 2px 8px; font-size: 12px;">삭제</button>` : ''}
+                        </div>
+                        <p style="margin: 5px 0 0 0;">${comment.content}</p>
+                    </div>
+                `).join('')
+            }
+        }
+    } catch (error) {
+        console.error('댓글 로드 실패:', error)
     }
 }
 
 // 댓글 추가
 async function addComment(postId) {
-    const text = document.getElementById(`comment-text-${postId}`).value.trim()
-
-    if (!text) {
-        showMessage('댓글을 입력해주세요', 'error')
+    const input = document.getElementById('comment-input-' + postId)
+    const content = input.value.trim()
+    
+    if (!content) {
+        showMessage('댓글을 입력하세요', 'error')
         return
     }
-
+    
     try {
-        const { error } = await supabase
-            .from('comments')
-            .insert([{
-                post_id: postId,
-                author_email: currentUser.email,
-                text
-            }])
-
-        if (error) throw error
-
-        showMessage('댓글이 작성되었습니다!', 'success')
-        document.getElementById(`comment-text-${postId}`).value = ''
-        await enterRoom(currentRoom.id)
+        const comment = {
+            id: 'comment_' + Date.now(),
+            postId,
+            content,
+            author: currentUser.email,
+            createdAt: new Date().toISOString()
+        }
+        
+        const transaction = db.transaction(['comments'], 'readwrite')
+        const store = transaction.objectStore('comments')
+        store.add(comment)
+        
+        input.value = ''
+        loadComments(postId)
     } catch (error) {
-        console.error('Error:', error)
-        showMessage('오류: ' + error.message, 'error')
+        showMessage('댓글 추가 실패: ' + error.message, 'error')
     }
 }
 
 // 댓글 삭제
 async function deleteComment(commentId) {
     if (!confirm('댓글을 삭제하시겠습니까?')) return
-
+    
     try {
-        const { error } = await supabase
-            .from('comments')
-            .delete()
-            .eq('id', commentId)
-
-        if (error) throw error
-
-        showMessage('댓글이 삭제되었습니다', 'success')
-        await enterRoom(currentRoom.id)
+        const transaction = db.transaction(['comments'], 'readwrite')
+        const store = transaction.objectStore('comments')
+        store.delete(commentId)
+        
+        // 모든 댓글 다시 로드
+        const postsList = document.getElementById('postsList')
+        if (postsList) {
+            loadRoomDetail()
+        }
     } catch (error) {
-        console.error('Error:', error)
-        showMessage('오류: ' + error.message, 'error')
+        showMessage('댓글 삭제 실패: ' + error.message, 'error')
     }
 }
 
-// 방 나가기
-function exitRoom() {
-    currentRoom = null
-    switchTab('rooms')
-    loadRooms()
-}
-
-// 파일을 Base64로 변환
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-    })
-}
-
-// 날짜 포맷팅
-function formatDate(dateString) {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
-}
-
-// HTML 이스케이프
-function escapeHtml(text) {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
-}
-
-// 페이지 로드 시
-window.addEventListener('load', () => {
-    const savedEmail = localStorage.getItem('userEmail')
-    if (savedEmail) {
-        document.getElementById('loginEmail').value = savedEmail
-        setTimeout(() => login(), 100)
-    } else {
-        document.getElementById('loginEmail').focus()
+// 초기화
+window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await initDB()
+    } catch (error) {
+        showMessage('데이터베이스 초기화 실패: ' + error.message, 'error')
     }
 })
-
-// 전역 함수로 노출
-window.login = login
-window.logout = logout
-window.switchTab = switchTab
-window.createRoom = createRoom
-window.enterRoom = enterRoom
-window.createPost = createPost
-window.deletePost = deletePost
-window.addComment = addComment
-window.deleteComment = deleteComment
-window.exitRoom = exitRoom

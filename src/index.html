@@ -4,75 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>일상 공유 블로그</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <!-- 로그인 화면 -->
-    <div id="loginScreen" class="login-container">
-        <h2>📝 일상 공유 블로그</h2>
-        <p style="color: #666; margin-bottom: 30px;">이메일로 로그인하세요</p>
-        
-        <div class="form-group">
-            <input type="email" id="loginEmail" placeholder="이메일을 입력하세요" autofocus>
+    <div class="container">
+        <!-- 로그인 화면 -->
+        <div id="loginScreen" class="login-container">
+            <h2>📝 일상 공유 블로그</h2>
+            <p style="color: #666; margin-bottom: 30px;">이메일로 로그인하세요</p>
+            
+            <div class="form-group">
+                <input type="email" id="loginEmail" placeholder="이메일을 입력하세요" autofocus>
+            </div>
+            
+            <button class="btn-primary" onclick="login()" style="width: 100%;">로그인</button>
         </div>
-        
-        <button class="btn-primary" onclick="login()" style="width: 100%;">로그인</button>
+
+        <!-- 메인 화면 -->
+        <div id="mainScreen" class="main-content" style="display: none;">
+            <div class="container">
+                <header>
+                    <h1>📝 일상 공유</h1>
+                    <div class="user-info">
+                        <span class="user-email" id="userEmail"></span>
+                        <button class="btn-logout" onclick="logout()">로그아웃</button>
+                    </div>
+                </header>
+
+                <div id="message"></div>
+
+                <!-- 탭 네비게이션 -->
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('rooms')">방 목록</button>
+                    <button class="tab-btn" onclick="switchTab('create-room')">방 만들기</button>
+                    <button class="tab-btn" onclick="switchTab('current-room')">현재 방</button>
+                </div>
+
+                <!-- 방 목록 탭 -->
+                <div id="rooms" class="tab-content active">
+                    <div class="rooms-grid" id="roomsGrid">
+                        <div class="loading">로딩 중...</div>
+                    </div>
+                </div>
+
+                <!-- 방 만들기 탭 -->
+                <div id="create-room" class="tab-content">
+                    <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                        <h2 style="margin-bottom: 20px; color: #333;">새 방 만들기</h2>
+                        
+                        <div class="form-group">
+                            <label>방 이름</label>
+                            <input type="text" id="roomName" placeholder="방 이름을 입력하세요">
+                        </div>
+
+                        <div class="form-group">
+                            <label>방 설명</label>
+                            <textarea id="roomDescription" placeholder="방에 대한 설명을 입력하세요"></textarea>
+                        </div>
+
+                        <button class="btn-primary" onclick="createRoom()" style="width: 100%;">방 만들기</button>
+                    </div>
+                </div>
+
+                <!-- 현재 방 탭 -->
+                <div id="current-room" class="tab-content">
+                    <div id="roomDetail"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 메인 화면 -->
-    <div id="mainScreen" class="main-content">
-        <div class="container">
-            <header>
-                <h1>📝 일상 공유</h1>
-                <div class="user-info">
-                    <span class="user-email" id="userEmail"></span>
-                    <button class="btn-logout" onclick="logout()">로그아웃</button>
-                </div>
-            </header>
-
-            <div id="message"></div>
-
-            <!-- 탭 네비게이션 -->
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('rooms')">방 목록</button>
-                <button class="tab-btn" onclick="switchTab('create-room')">방 만들기</button>
-                <button class="tab-btn" onclick="switchTab('current-room')">현재 방</button>
-            </div>
-
-            <!-- 방 목록 탭 -->
-            <div id="rooms" class="tab-content active">
-                <div class="rooms-grid" id="roomsGrid">
-                    <div class="loading">로딩 중...</div>
-                </div>
-            </div>
-
-            <!-- 방 만들기 탭 -->
-            <div id="create-room" class="tab-content">
-                <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-                    <h2 style="margin-bottom: 20px; color: #333;">새 방 만들기</h2>
-                    
-                    <div class="form-group">
-                        <label>방 이름</label>
-                        <input type="text" id="roomName" placeholder="방 이름을 입력하세요">
-                    </div>
-
-                    <div class="form-group">
-                        <label>방 설명</label>
-                        <textarea id="roomDescription" placeholder="방에 대한 설명을 입력하세요"></textarea>
-                    </div>
-
-                    <button class="btn-primary" onclick="createRoom()" style="width: 100%;">방 만들기</button>
-                </div>
-            </div>
-
-            <!-- 현재 방 탭 -->
-            <div id="current-room" class="tab-content">
-                <div id="roomDetail"></div>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="./main.js"></script>
+    <script src="./main.js"></script>
 </body>
 </html>
