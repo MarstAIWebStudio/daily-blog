@@ -3,117 +3,531 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>일상 공유 블로그</title>
+    <title>일상 공유 블로그 - DailyShare</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        :root {
+            --primary: #4CAF50;
+            --secondary: #2196F3;
+            --danger: #f44336;
+            --dark: #1a1a1a;
+            --light: #f5f5f5;
+            --border: #e0e0e0;
+            --text: #333;
+            --text-light: #666;
+            --bg-dark: #0d1117;
+            --bg-dark-secondary: #161b22;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--light);
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            background: var(--bg-dark);
+            color: #e0e0e0;
+        }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .login-container { max-width: 400px; margin: 100px auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
+        
+        /* 네비게이션 */
+        nav {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: background 0.3s;
+        }
+        body.dark-mode nav { background: var(--bg-dark-secondary); }
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+        nav h1 { font-size: 24px; color: var(--primary); }
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        .nav-menu a {
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        body.dark-mode .nav-menu a { color: #e0e0e0; }
+        .nav-menu a:hover { color: var(--primary); }
+        .nav-menu a.active { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+        .nav-right { display: flex; gap: 15px; align-items: center; }
+        .theme-toggle { background: none; border: none; cursor: pointer; font-size: 20px; }
+        
+        /* 로그인 화면 */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        body.dark-mode .login-container { background: var(--bg-dark-secondary); }
         .login-container h2 { margin-bottom: 10px; font-size: 28px; }
-        .login-container p { color: #666; margin-bottom: 30px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .login-container p { color: var(--text-light); margin-bottom: 30px; }
+        
+        /* 폼 */
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+            color: var(--text);
+            transition: border-color 0.2s;
+        }
+        body.dark-mode .form-group input,
+        body.dark-mode .form-group textarea,
+        body.dark-mode .form-group select {
+            background: var(--bg-dark-secondary);
+            color: #e0e0e0;
+            border-color: #404854;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(76,175,80,0.1);
+        }
         .form-group textarea { resize: vertical; min-height: 100px; }
-        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76,175,80,0.1); }
-        .btn-primary { background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-primary:hover { background: #45a049; }
-        .btn-secondary { background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-        .btn-secondary:hover { background: #da190b; }
-        .btn-logout { background: #666; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-        .btn-logout:hover { background: #555; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #ddd; }
-        header h1 { font-size: 28px; }
-        .user-info { display: flex; align-items: center; gap: 15px; }
-        .user-email { font-size: 14px; color: #666; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 1px solid #ddd; }
-        .tab-btn { background: none; border: none; padding: 12px 20px; font-size: 14px; cursor: pointer; color: #666; border-bottom: 3px solid transparent; transition: all 0.2s; }
-        .tab-btn.active { color: #4CAF50; border-bottom-color: #4CAF50; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .room-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; }
-        .room-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .room-card h3 { margin-bottom: 10px; font-size: 18px; }
-        .room-card p { color: #666; font-size: 14px; margin-bottom: 10px; min-height: 40px; }
-        .room-card small { color: #999; font-size: 12px; }
-        .message { padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; display: none; }
+        
+        /* 버튼 */
+        button {
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            padding: 12px 24px;
+        }
+        .btn-primary:hover { background: #45a049; transform: translateY(-2px); }
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        .btn-secondary:hover { background: #0b7dda; }
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        .btn-danger:hover { background: #da190b; }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+        }
+        
+        /* 메시지 */
+        .message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
         .message.active { display: block; }
         .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .post-item { background: #f9f9f9; padding: 20px; margin-bottom: 15px; border-radius: 8px; }
-        .post-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; }
-        .post-header h4 { margin: 0; font-size: 16px; }
-        .post-header small { color: #999; font-size: 12px; }
-        .post-content { margin: 10px 0; white-space: pre-wrap; word-break: break-word; }
-        .comments-section { background: white; padding: 15px; border-radius: 6px; margin-top: 10px; }
-        .comment-item { background: #f0f0f0; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
-        .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .comment-header small { color: #666; font-size: 12px; }
-        .comment-content { margin: 5px 0 0 0; font-size: 14px; }
-        .loading { text-align: center; color: #999; padding: 20px; }
+        
+        /* 탭 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--text-light);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* 그리드 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        /* 카드 */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        body.dark-mode .card { background: var(--bg-dark-secondary); }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-body { padding: 20px; }
+        .card-footer {
+            padding: 15px 20px;
+            background: #f9f9f9;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+        body.dark-mode .card-footer { background: var(--bg-dark); }
+        
+        /* 포스트 */
+        .post-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        body.dark-mode .post-item { background: var(--bg-dark-secondary); }
+        .post-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        .post-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            cursor: pointer;
+            color: var(--primary);
+        }
+        .post-title:hover { text-decoration: underline; }
+        .post-meta {
+            color: var(--text-light);
+            font-size: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .post-content {
+            margin: 15px 0;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .post-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .post-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .tag {
+            background: #e3f2fd;
+            color: var(--secondary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        body.dark-mode .tag { background: #1e3a5f; }
+        .post-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+        .action-btn:hover { color: var(--primary); }
+        .action-btn.liked { color: var(--danger); }
+        
+        /* 댓글 */
+        .comments-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+        .comment-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        body.dark-mode .comment-item { background: var(--bg-dark); }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .comment-author {
+            font-weight: 600;
+            color: var(--text);
+        }
+        .comment-date {
+            color: var(--text-light);
+            font-size: 12px;
+        }
+        
+        /* 검색 */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        /* 프로필 */
+        .profile-header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        body.dark-mode .profile-header { background: var(--bg-dark-secondary); }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 15px;
+        }
+        .profile-name { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
+        .profile-email { color: var(--text-light); margin-bottom: 15px; }
+        .profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .stat-label {
+            color: var(--text-light);
+            font-size: 12px;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .nav-menu { gap: 15px; font-size: 12px; }
+            .grid { grid-template-columns: 1fr; }
+            .profile-stats { flex-direction: column; gap: 15px; }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div id="loginScreen" class="login-container">
-            <h2>📝 일상 공유 블로그</h2>
-            <p>이메일로 로그인하세요</p>
-            <div class="form-group">
-                <input type="email" id="loginEmail" placeholder="이메일을 입력하세요" autofocus>
+    <!-- 네비게이션 -->
+    <nav>
+        <div class="container">
+            <h1>📝 DailyShare</h1>
+            <div class="nav-menu">
+                <a onclick="switchTab('popular', event)" class="nav-link active">인기 블로그</a>
+                <a onclick="switchTab('my-blogs', event)" class="nav-link">내 블로그</a>
+                <a onclick="switchTab('create', event)" class="nav-link">만들기</a>
+                <a onclick="switchTab('search', event)" class="nav-link">검색</a>
+                <a onclick="switchTab('profile', event)" class="nav-link">내 페이지</a>
             </div>
-            <button class="btn-primary" onclick="login()" style="width: 100%;">로그인</button>
+            <div class="nav-right">
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+                <button class="btn-primary btn-small" onclick="logout()">로그아웃</button>
+            </div>
         </div>
+    </nav>
 
-        <div id="mainScreen" style="display: none;">
-            <header>
-                <h1>📝 일상 공유</h1>
-                <div class="user-info">
-                    <span class="user-email" id="userEmail"></span>
-                    <button class="btn-logout" onclick="logout()">로그아웃</button>
-                </div>
-            </header>
+    <!-- 로그인 화면 -->
+    <div id="loginScreen" class="login-container">
+        <h2>📝 DailyShare</h2>
+        <p>일상을 공유하는 블로그</p>
+        <div class="form-group">
+            <input type="email" id="loginEmail" placeholder="이메일을 입력하세요" autofocus>
+        </div>
+        <button class="btn-primary" onclick="login()" style="width: 100%;">로그인</button>
+    </div>
 
+    <!-- 메인 화면 -->
+    <div id="mainScreen" style="display: none;">
+        <div class="container">
             <div id="message" class="message"></div>
 
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('rooms', event)">방 목록</button>
-                <button class="tab-btn" onclick="switchTab('create-room', event)">방 만들기</button>
-                <button class="tab-btn" onclick="switchTab('current-room', event)">현재 방</button>
+            <!-- 인기 블로그 -->
+            <div id="popular" class="tab-content active">
+                <h2 style="margin-bottom: 20px;">🔥 인기 블로그</h2>
+                <div id="popularGrid" class="grid"></div>
             </div>
 
-            <div id="rooms" class="tab-content active">
-                <div class="rooms-grid" id="roomsGrid">
-                    <div class="loading">로딩 중...</div>
+            <!-- 내 블로그 -->
+            <div id="my-blogs" class="tab-content">
+                <h2 style="margin-bottom: 20px;">📚 내 블로그</h2>
+                <div id="myBlogsGrid" class="grid"></div>
+            </div>
+
+            <!-- 만들기 -->
+            <div id="create" class="tab-content">
+                <div class="card" style="max-width: 600px; margin: 0 auto;">
+                    <div class="card-header">
+                        <h2>새 게시글 작성</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>제목</label>
+                            <input type="text" id="postTitle" placeholder="제목을 입력하세요">
+                        </div>
+                        <div class="form-group">
+                            <label>내용</label>
+                            <textarea id="postContent" placeholder="내용을 작성하세요"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>태그 (쉼표로 구분)</label>
+                            <input type="text" id="postTags" placeholder="예: 일상, 여행, 음식">
+                        </div>
+                        <div class="form-group">
+                            <label>이미지</label>
+                            <input type="file" id="postImage" accept="image/*">
+                        </div>
+                        <button class="btn-primary" onclick="createPost()" style="width: 100%;">게시글 작성</button>
+                    </div>
                 </div>
             </div>
 
-            <div id="create-room" class="tab-content">
-                <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <h2 style="margin-bottom: 20px; color: #333;">새 방 만들기</h2>
-                    <div class="form-group">
-                        <label>방 이름</label>
-                        <input type="text" id="roomName" placeholder="방 이름을 입력하세요">
-                    </div>
-                    <div class="form-group">
-                        <label>방 설명</label>
-                        <textarea id="roomDescription" placeholder="방에 대한 설명을 입력하세요"></textarea>
-                    </div>
-                    <button class="btn-primary" onclick="createRoom()" style="width: 100%;">방 만들기</button>
+            <!-- 검색 -->
+            <div id="search" class="tab-content">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="게시글 검색..." onkeyup="performSearch()">
+                    <button class="btn-primary">검색</button>
                 </div>
+                <div id="searchResults" class="grid"></div>
             </div>
 
-            <div id="current-room" class="tab-content">
-                <div id="roomDetail"></div>
+            <!-- 내 페이지 -->
+            <div id="profile" class="tab-content">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profileAvatar">👤</div>
+                    <div class="profile-name" id="profileName"></div>
+                    <div class="profile-email" id="profileEmail"></div>
+                    <div class="profile-stats">
+                        <div class="stat">
+                            <div class="stat-number" id="postCount">0</div>
+                            <div class="stat-label">게시글</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="likeCount">0</div>
+                            <div class="stat-label">받은 좋아요</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="commentCount">0</div>
+                            <div class="stat-label">댓글</div>
+                        </div>
+                    </div>
+                </div>
+                <h3 style="margin-bottom: 20px;">내 게시글</h3>
+                <div id="profilePosts"></div>
             </div>
         </div>
     </div>
 
     <script>
-        const DB_NAME = 'DailyBlogDB'
+        const DB_NAME = 'DailyShareDB'
         const DB_VERSION = 1
         let db = null
         let currentUser = null
-        let currentRoom = null
+        let currentTheme = localStorage.getItem('theme') || 'light'
 
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -123,10 +537,21 @@
                 request.onupgradeneeded = (event) => {
                     const database = event.target.result
                     if (!database.objectStoreNames.contains('users')) database.createObjectStore('users', { keyPath: 'email' })
-                    if (!database.objectStoreNames.contains('rooms')) { const rs = database.createObjectStore('rooms', { keyPath: 'id' }); rs.createIndex('createdAt', 'createdAt', { unique: false }) }
-                    if (!database.objectStoreNames.contains('posts')) { const ps = database.createObjectStore('posts', { keyPath: 'id' }); ps.createIndex('roomId', 'roomId', { unique: false }); ps.createIndex('createdAt', 'createdAt', { unique: false }) }
-                    if (!database.objectStoreNames.contains('comments')) { const cs = database.createObjectStore('comments', { keyPath: 'id' }); cs.createIndex('postId', 'postId', { unique: false }); cs.createIndex('createdAt', 'createdAt', { unique: false }) }
-                    if (!database.objectStoreNames.contains('roomMembers')) { const ms = database.createObjectStore('roomMembers', { keyPath: 'id' }); ms.createIndex('roomId', 'roomId', { unique: false }); ms.createIndex('email', 'email', { unique: false }) }
+                    if (!database.objectStoreNames.contains('posts')) {
+                        const ps = database.createObjectStore('posts', { keyPath: 'id' })
+                        ps.createIndex('author', 'author', { unique: false })
+                        ps.createIndex('createdAt', 'createdAt', { unique: false })
+                        ps.createIndex('likes', 'likes', { unique: false })
+                    }
+                    if (!database.objectStoreNames.contains('comments')) {
+                        const cs = database.createObjectStore('comments', { keyPath: 'id' })
+                        cs.createIndex('postId', 'postId', { unique: false })
+                    }
+                    if (!database.objectStoreNames.contains('likes')) {
+                        const ls = database.createObjectStore('likes', { keyPath: 'id' })
+                        ls.createIndex('postId', 'postId', { unique: false })
+                        ls.createIndex('userEmail', 'userEmail', { unique: false })
+                    }
                 }
             })
         }
@@ -139,16 +564,15 @@
             const getRequest = store.get(email)
             getRequest.onsuccess = () => {
                 let user = getRequest.result
-                if (!user) { user = { email, createdAt: new Date().toISOString() }; store.add(user) }
+                if (!user) { user = { email, createdAt: new Date().toISOString(), likedPosts: [] }; store.add(user) }
                 currentUser = user
                 showMainScreen()
-                loadRooms()
+                loadPopular()
             }
         }
 
         function logout() {
             currentUser = null
-            currentRoom = null
             document.getElementById('loginScreen').style.display = 'block'
             document.getElementById('mainScreen').style.display = 'none'
             document.getElementById('loginEmail').value = ''
@@ -157,7 +581,9 @@
         function showMainScreen() {
             document.getElementById('loginScreen').style.display = 'none'
             document.getElementById('mainScreen').style.display = 'block'
-            document.getElementById('userEmail').textContent = currentUser.email
+            document.getElementById('profileName').textContent = currentUser.email
+            document.getElementById('profileEmail').textContent = currentUser.email
+            applyTheme()
         }
 
         function showMessage(text, type = 'info') {
@@ -168,135 +594,177 @@
         }
 
         function switchTab(tabName, event) {
+            if (event) event.preventDefault()
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'))
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'))
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'))
             document.getElementById(tabName).classList.add('active')
             event.target.classList.add('active')
-            if (tabName === 'current-room' && currentRoom) loadRoomDetail()
-        }
-
-        function loadRooms() {
-            const transaction = db.transaction(['rooms'], 'readonly')
-            const store = transaction.objectStore('rooms')
-            const request = store.getAll()
-            request.onsuccess = () => {
-                const rooms = request.result
-                const grid = document.getElementById('roomsGrid')
-                if (rooms.length === 0) { grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">만들어진 방이 없습니다</p>'; return; }
-                grid.innerHTML = rooms.map(room => `
-                    <div class="room-card">
-                        <h3>${room.name}</h3>
-                        <p>${room.description || '설명 없음'}</p>
-                        <small>생성: ${new Date(room.createdAt).toLocaleDateString('ko-KR')}</small>
-                        <button class="btn-primary" onclick="joinRoom('${room.id}')" style="width: 100%; margin-top: 10px;">입장</button>
-                    </div>
-                `).join('')
-            }
-        }
-
-        function createRoom() {
-            const name = document.getElementById('roomName').value.trim()
-            const description = document.getElementById('roomDescription').value.trim()
-            if (!name) { showMessage('방 이름을 입력하세요', 'error'); return; }
-            const room = { id: 'room_' + Date.now(), name, description, createdBy: currentUser.email, createdAt: new Date().toISOString() }
-            const transaction = db.transaction(['rooms', 'roomMembers'], 'readwrite')
-            const roomStore = transaction.objectStore('rooms')
-            const memberStore = transaction.objectStore('roomMembers')
-            roomStore.add(room)
-            memberStore.add({ id: 'member_' + Date.now(), roomId: room.id, email: currentUser.email, joinedAt: new Date().toISOString() })
-            document.getElementById('roomName').value = ''
-            document.getElementById('roomDescription').value = ''
-            showMessage('방이 생성되었습니다!', 'success')
-            loadRooms()
-        }
-
-        function joinRoom(roomId) {
-            const transaction = db.transaction(['rooms', 'roomMembers'], 'readwrite')
-            const roomStore = transaction.objectStore('rooms')
-            const memberStore = transaction.objectStore('roomMembers')
-            const roomRequest = roomStore.get(roomId)
-            roomRequest.onsuccess = () => {
-                currentRoom = roomRequest.result
-                const memberIndex = memberStore.index('email')
-                const memberQuery = memberIndex.getAll(currentUser.email)
-                memberQuery.onsuccess = () => {
-                    const existingMembers = memberQuery.result.filter(m => m.roomId === roomId)
-                    if (existingMembers.length === 0) {
-                        memberStore.add({ id: 'member_' + Date.now(), roomId, email: currentUser.email, joinedAt: new Date().toISOString() })
-                    }
-                    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'))
-                    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'))
-                    document.getElementById('current-room').classList.add('active')
-                    document.querySelectorAll('.tab-btn')[2].classList.add('active')
-                    loadRoomDetail()
-                }
-            }
-        }
-
-        function loadRoomDetail() {
-            if (!currentRoom) return
-            const transaction = db.transaction(['posts', 'comments'], 'readonly')
-            const postStore = transaction.objectStore('posts')
-            const postIndex = postStore.index('roomId')
-            const postsRequest = postIndex.getAll(currentRoom.id)
-            postsRequest.onsuccess = () => {
-                const posts = postsRequest.result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                const detail = document.getElementById('roomDetail')
-                detail.innerHTML = `
-                    <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <h2>${currentRoom.name}</h2>
-                        <p>${currentRoom.description || '설명 없음'}</p>
-                        <div style="margin-top: 30px; margin-bottom: 30px;">
-                            <h3>새 게시글 작성</h3>
-                            <div class="form-group">
-                                <input type="text" id="postTitle" placeholder="제목">
-                            </div>
-                            <div class="form-group">
-                                <textarea id="postContent" placeholder="내용을 작성하세요"></textarea>
-                            </div>
-                            <button class="btn-primary" onclick="createPost()" style="width: 100%;">게시글 작성</button>
-                        </div>
-                        <h3>게시글 (${posts.length})</h3>
-                        <div id="postsList">
-                            ${posts.length === 0 ? '<p style="color: #999;">게시글이 없습니다</p>' : posts.map(post => `
-                                <div class="post-item">
-                                    <div class="post-header">
-                                        <div>
-                                            <h4>${post.title}</h4>
-                                            <small>${post.author} • ${new Date(post.createdAt).toLocaleDateString('ko-KR')}</small>
-                                        </div>
-                                        ${post.author === currentUser.email ? `<button class="btn-secondary" onclick="deletePost('${post.id}')">삭제</button>` : ''}
-                                    </div>
-                                    <p class="post-content">${post.content}</p>
-                                    <div class="comments-section">
-                                        <h5 style="margin-top: 0;">댓글</h5>
-                                        <div id="comments-${post.id}"></div>
-                                        <div style="margin-top: 10px;">
-                                            <input type="text" id="comment-input-${post.id}" placeholder="댓글을 입력하세요" style="width: calc(100% - 60px); padding: 8px;">
-                                            <button class="btn-primary" onclick="addComment('${post.id}')" style="width: 50px; margin-left: 5px;">등록</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `
-                posts.forEach(post => loadComments(post.id))
-            }
+            
+            if (tabName === 'popular') loadPopular()
+            else if (tabName === 'my-blogs') loadMyBlogs()
+            else if (tabName === 'profile') loadProfile()
         }
 
         function createPost() {
             const title = document.getElementById('postTitle').value.trim()
             const content = document.getElementById('postContent').value.trim()
+            const tagsStr = document.getElementById('postTags').value.trim()
+            const imageFile = document.getElementById('postImage').files[0]
+            
             if (!title || !content) { showMessage('제목과 내용을 입력하세요', 'error'); return; }
-            const post = { id: 'post_' + Date.now(), roomId: currentRoom.id, title, content, author: currentUser.email, createdAt: new Date().toISOString() }
+            
+            const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()) : []
+            let imageData = null
+            
+            if (imageFile) {
+                const reader = new FileReader()
+                reader.onload = (e) => {
+                    imageData = e.target.result
+                    savePost(title, content, tags, imageData)
+                }
+                reader.readAsDataURL(imageFile)
+            } else {
+                savePost(title, content, tags, null)
+            }
+        }
+
+        function savePost(title, content, tags, imageData) {
+            const post = {
+                id: 'post_' + Date.now(),
+                title,
+                content,
+                tags,
+                author: currentUser.email,
+                image: imageData,
+                createdAt: new Date().toISOString(),
+                likes: 0,
+                views: 0
+            }
             const transaction = db.transaction(['posts'], 'readwrite')
             const store = transaction.objectStore('posts')
             store.add(post)
             document.getElementById('postTitle').value = ''
             document.getElementById('postContent').value = ''
+            document.getElementById('postTags').value = ''
+            document.getElementById('postImage').value = ''
             showMessage('게시글이 작성되었습니다!', 'success')
-            loadRoomDetail()
+            loadPopular()
+        }
+
+        function loadPopular() {
+            const transaction = db.transaction(['posts'], 'readonly')
+            const store = transaction.objectStore('posts')
+            const request = store.getAll()
+            request.onsuccess = () => {
+                const posts = request.result.sort((a, b) => (b.likes || 0) - (a.likes || 0) || new Date(b.createdAt) - new Date(a.createdAt))
+                renderPosts(posts, 'popularGrid')
+            }
+        }
+
+        function loadMyBlogs() {
+            const transaction = db.transaction(['posts'], 'readonly')
+            const store = transaction.objectStore('posts')
+            const index = store.index('author')
+            const request = index.getAll(currentUser.email)
+            request.onsuccess = () => {
+                const posts = request.result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                renderPosts(posts, 'myBlogsGrid')
+            }
+        }
+
+        function renderPosts(posts, containerId) {
+            const container = document.getElementById(containerId)
+            if (posts.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">게시글이 없습니다</div>'
+                return
+            }
+            container.innerHTML = posts.map(post => `
+                <div class="card">
+                    ${post.image ? `<img src="${post.image}" style="width: 100%; height: 200px; object-fit: cover;">` : ''}
+                    <div class="card-body">
+                        <div class="post-title" onclick="viewPost('${post.id}')">${post.title}</div>
+                        <div class="post-meta">
+                            <span>${post.author}</span>
+                            <span>${new Date(post.createdAt).toLocaleDateString('ko-KR')}</span>
+                        </div>
+                        ${post.tags && post.tags.length > 0 ? `<div class="post-tags">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+                        <p style="margin-top: 10px; color: var(--text-light); line-height: 1.5;">${post.content.substring(0, 100)}...</p>
+                        <div class="post-actions">
+                            <button class="action-btn" onclick="toggleLike('${post.id}')">❤️ ${post.likes || 0}</button>
+                            <button class="action-btn">💬 댓글</button>
+                            <button class="action-btn">👁️ ${post.views || 0}</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('')
+        }
+
+        function toggleLike(postId) {
+            const transaction = db.transaction(['posts', 'likes'], 'readwrite')
+            const postStore = transaction.objectStore('posts')
+            const likeStore = transaction.objectStore('likes')
+            const postRequest = postStore.get(postId)
+            postRequest.onsuccess = () => {
+                const post = postRequest.result
+                const likeIndex = likeStore.index('userEmail')
+                const likeQuery = likeIndex.getAll(currentUser.email)
+                likeQuery.onsuccess = () => {
+                    const userLike = likeQuery.result.find(l => l.postId === postId)
+                    if (userLike) {
+                        likeStore.delete(userLike.id)
+                        post.likes = (post.likes || 1) - 1
+                    } else {
+                        likeStore.add({ id: 'like_' + Date.now(), postId, userEmail: currentUser.email })
+                        post.likes = (post.likes || 0) + 1
+                    }
+                    postStore.put(post)
+                    loadPopular()
+                }
+            }
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase()
+            if (!query) { document.getElementById('searchResults').innerHTML = ''; return; }
+            const transaction = db.transaction(['posts'], 'readonly')
+            const store = transaction.objectStore('posts')
+            const request = store.getAll()
+            request.onsuccess = () => {
+                const posts = request.result.filter(p => p.title.toLowerCase().includes(query) || p.content.toLowerCase().includes(query) || (p.tags && p.tags.some(t => t.toLowerCase().includes(query))))
+                renderPosts(posts, 'searchResults')
+            }
+        }
+
+        function loadProfile() {
+            const transaction = db.transaction(['posts'], 'readonly')
+            const store = transaction.objectStore('posts')
+            const index = store.index('author')
+            const request = index.getAll(currentUser.email)
+            request.onsuccess = () => {
+                const posts = request.result
+                document.getElementById('postCount').textContent = posts.length
+                document.getElementById('likeCount').textContent = posts.reduce((sum, p) => sum + (p.likes || 0), 0)
+                const profilePosts = document.getElementById('profilePosts')
+                if (posts.length === 0) {
+                    profilePosts.innerHTML = '<div class="empty-state">작성한 게시글이 없습니다</div>'
+                } else {
+                    profilePosts.innerHTML = posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(post => `
+                        <div class="post-item">
+                            <div class="post-header">
+                                <div>
+                                    <div class="post-title" onclick="viewPost('${post.id}')">${post.title}</div>
+                                    <div class="post-meta">${new Date(post.createdAt).toLocaleDateString('ko-KR')} • ❤️ ${post.likes || 0}</div>
+                                </div>
+                                <div>
+                                    <button class="btn-secondary btn-small" onclick="editPost('${post.id}')">수정</button>
+                                    <button class="btn-danger btn-small" onclick="deletePost('${post.id}')">삭제</button>
+                                </div>
+                            </div>
+                            <p class="post-content">${post.content}</p>
+                        </div>
+                    `).join('')
+                }
+            }
         }
 
         function deletePost(postId) {
@@ -307,56 +775,29 @@
             postStore.delete(postId)
             const commentIndex = commentStore.index('postId')
             const commentsRequest = commentIndex.getAll(postId)
-            commentsRequest.onsuccess = () => { commentsRequest.result.forEach(comment => { commentStore.delete(comment.id) }) }
+            commentsRequest.onsuccess = () => { commentsRequest.result.forEach(c => { commentStore.delete(c.id) }) }
             showMessage('게시글이 삭제되었습니다', 'success')
-            loadRoomDetail()
+            loadProfile()
         }
 
-        function loadComments(postId) {
-            const transaction = db.transaction(['comments'], 'readonly')
-            const store = transaction.objectStore('comments')
-            const index = store.index('postId')
-            const request = index.getAll(postId)
-            request.onsuccess = () => {
-                const comments = request.result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                const container = document.getElementById('comments-' + postId)
-                if (container) {
-                    container.innerHTML = comments.map(comment => `
-                        <div class="comment-item">
-                            <div class="comment-header">
-                                <small><strong>${comment.author}</strong> • ${new Date(comment.createdAt).toLocaleString('ko-KR')}</small>
-                                ${comment.author === currentUser.email ? `<button class="btn-secondary" onclick="deleteComment('${comment.id}')" style="padding: 2px 8px; font-size: 12px;">삭제</button>` : ''}
-                            </div>
-                            <p class="comment-content">${comment.content}</p>
-                        </div>
-                    `).join('')
-                }
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light'
+            localStorage.setItem('theme', currentTheme)
+            applyTheme()
+        }
+
+        function applyTheme() {
+            if (currentTheme === 'dark') {
+                document.body.classList.add('dark-mode')
+                document.querySelector('.theme-toggle').textContent = '☀️'
+            } else {
+                document.body.classList.remove('dark-mode')
+                document.querySelector('.theme-toggle').textContent = '🌙'
             }
         }
 
-        function addComment(postId) {
-            const input = document.getElementById('comment-input-' + postId)
-            const content = input.value.trim()
-            if (!content) { showMessage('댓글을 입력하세요', 'error'); return; }
-            const comment = { id: 'comment_' + Date.now(), postId, content, author: currentUser.email, createdAt: new Date().toISOString() }
-            const transaction = db.transaction(['comments'], 'readwrite')
-            const store = transaction.objectStore('comments')
-            store.add(comment)
-            input.value = ''
-            loadComments(postId)
-        }
-
-        function deleteComment(commentId) {
-            if (!confirm('댓글을 삭제하시겠습니까?')) return
-            const transaction = db.transaction(['comments'], 'readwrite')
-            const store = transaction.objectStore('comments')
-            store.delete(commentId)
-            const postsList = document.getElementById('postsList')
-            if (postsList) loadRoomDetail()
-        }
-
         window.addEventListener('DOMContentLoaded', async () => {
-            try { await initDB() } catch (error) { showMessage('데이터베이스 초기화 실패: ' + error.message, 'error') }
+            try { await initDB(); applyTheme(); } catch (error) { showMessage('초기화 실패: ' + error.message, 'error') }
         })
     </script>
 </body>
